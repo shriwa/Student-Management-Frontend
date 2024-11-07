@@ -1,66 +1,60 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../Context/AuthContext";
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: "",
-    confirmPassword: "", // Adding confirmPassword field
-    termsAgreed: false,
+    confirmPassword: "",
   });
 
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const { signup } = useContext(AuthContext);
+
+  const navigate = useNavigate();
+
   const handleChange = (e) => {
-    const { name, value, checked, type } = e.target;
+    const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: value,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      // Check if the passwords match
-      if (formData.password !== formData.confirmPassword) {
-        throw new Error("Passwords do not match");
-      }
 
-      // Call your API to register the user
-      const response = await fetch(
-        "http://localhost:7162/api/Auth/registration",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userName: formData.username,
-            email: formData.email,
-            password: formData.password,
-          }),
-        }
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const success = await signup(
+        formData.email,
+        formData.username,
+        formData.password
       );
 
-      if (!response.ok) {
-        // Handle HTTP error status codes
-        throw new Error("Failed to register");
+      if (success) {
+        setFormData({
+          username: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+        });
+        alert("User registered successfully!");
+        navigate("/");
       }
-
-      // If the response is successful, reset the form data and display a success message
-      setFormData({
-        username: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-        termsAgreed: false,
-      });
-      alert("User registered successfully!");
-
-      // You can perform additional actions here, such as redirecting to the login page
     } catch (error) {
-      // Display an error alert if the request fails or passwords do not match
-      console.error("Registration failed:", error);
-      alert(error.message || "Registration failed. Please try again.");
+      const errorMessage = error.response?.data?.error || "Registration failed";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -146,40 +140,55 @@ const SignUp = () => {
                     required
                   />
                 </div>
-                <div className="flex items-start">
-                  <div className="flex items-center h-5">
-                    <input
-                      id="terms"
-                      name="termsAgreed"
-                      aria-describedby="terms"
-                      type="checkbox"
-                      className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-primary-600 dark:ring-offset-gray-800"
-                      checked={formData.termsAgreed}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                  <div className="ml-3 text-sm">
-                    <label
-                      htmlFor="terms"
-                      className="font-light text-gray-500 dark:text-gray-300"
-                    >
-                      I accept the{" "}
-                      <a
-                        className="font-medium text-primary-600 hover:underline dark:text-primary-500"
-                        href="#"
-                      >
-                        Terms and Conditions
-                      </a>
-                    </label>
-                  </div>
-                </div>
                 <button
                   type="submit"
                   className="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+                  disabled={loading}
                 >
-                  Create an account
+                  {loading ? "Creating account..." : "Create an account"}
                 </button>
+                {error && (
+                  <div
+                    id="alert-border-2"
+                    class="flex items-center p-4 mb-4 text-red-800 border-t-4 border-red-300 bg-red-50 dark:text-red-400 dark:bg-gray-800 dark:border-red-800"
+                    role="alert"
+                  >
+                    <svg
+                      class="flex-shrink-0 w-4 h-4"
+                      aria-hidden="true"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z" />
+                    </svg>
+                    <div class="ms-3 text-sm font-medium">{error}</div>
+                    <button
+                      type="button"
+                      class="ms-auto -mx-1.5 -my-1.5 bg-red-50 text-red-500 rounded-lg focus:ring-2 focus:ring-red-400 p-1.5 hover:bg-red-200 inline-flex items-center justify-center h-8 w-8 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-gray-700"
+                      data-dismiss-target="#alert-border-2"
+                      aria-label="Close"
+                    >
+                      <span class="sr-only">Dismiss</span>
+                      <svg
+                        class="w-3 h-3"
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 14 14"
+                      >
+                        <path
+                          stroke="currentColor"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+
                 <p className="text-sm font-light text-gray-500 dark:text-gray-400">
                   Already have an account?{" "}
                   <a

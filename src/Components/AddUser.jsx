@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { addStudent } from "../api/student";
 
 const AddUser = ({ onAddUser }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,24 +27,10 @@ const AddUser = ({ onAddUser }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     toggleModal();
-    if (window.confirm("Are you sure you want to add this user?")) {
-      try {
-        const response = await fetch("https://localhost:7162/api/Students", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        });
-        if (!response.ok) {
-          throw new Error("Failed to add user");
-        }
-        const newUser = await response.json();
-        onAddUser(newUser); // Update parent component state with new user
-      } catch (error) {
-        console.error("Failed to add user", error);
-      }
-    }
+    try {
+      const newUser = await addStudent(formData);
+      onAddUser(newUser);
+    } catch (error) {}
   };
 
   const inputs = [

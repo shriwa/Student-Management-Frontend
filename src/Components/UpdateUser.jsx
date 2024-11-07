@@ -37,7 +37,7 @@ const UpdateUser = ({ userData, onUpdateUser }) => {
     if (window.confirm("Are you sure you want to update")) {
       try {
         const response = await fetch(
-          `https://localhost:7162/api/Students/${formData.id}`,
+          `${process.env.REACT_APP_HOST}/api/Students/${formData.id}`,
           {
             method: "PUT",
             headers: {
